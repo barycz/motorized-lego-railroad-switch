@@ -36,7 +36,17 @@ void init() {
 
 	if (cyw43_arch_init()) {
 		printf("Wi-Fi init failed");
-		exit(-1);
+		exit(1);
+	}
+
+	cyw43_arch_enable_sta_mode();
+
+	printf("Connecting to Wi-Fi '%s'...\n", WIFI_SSID);
+	if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+		printf("failed to connect.\n");
+		exit(2);
+	} else {
+		printf("Connected.\n");
 	}
 
 	gpio_init(LedYellow);
@@ -60,6 +70,8 @@ void update() {
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 	setServoDuty(ServoDutyMaxUs);
 	sleep_ms(1000);
+
+	cyw43_arch_poll();
 }
 
 int main() {
@@ -68,4 +80,6 @@ int main() {
 	while(true) {
 		update();
 	}
+
+	cyw43_arch_deinit();
 }
