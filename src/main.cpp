@@ -10,6 +10,12 @@
 #include "hardware/timer.h"
 #include "hardware/pwm.h"
 
+#include "pico/stdlib.h"
+#include "pico/cyw43_arch.h"
+
+#include "lwip/pbuf.h"
+#include "lwip/udp.h"
+
 const uint LedYellow = 1;
 
 const uint ServoPwmOut = 0;
@@ -28,6 +34,11 @@ void setServoDuty(uint dutyUs) {
 void init() {
 	stdio_init_all();
 
+	if (cyw43_arch_init()) {
+		printf("Wi-Fi init failed");
+		exit(-1);
+	}
+
 	gpio_init(LedYellow);
 	gpio_set_dir(LedYellow, GPIO_OUT);
 
@@ -41,10 +52,12 @@ void init() {
 
 void update() {
 	gpio_put(LedYellow, 1);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 	setServoDuty(ServoDutyMinUs);
 	sleep_ms(1000);
 
 	gpio_put(LedYellow, 0);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 	setServoDuty(ServoDutyMaxUs);
 	sleep_ms(1000);
 }
