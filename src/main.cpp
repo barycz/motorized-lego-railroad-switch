@@ -25,10 +25,19 @@ const uint ServoDutyMaxUs = 1700;
 const uint ServoDutyMidUs = (ServoDutyMaxUs + ServoDutyMinUs) / 2;
 const uint ServoClkDivider = SYS_CLK_KHZ / 1000;
 
+const uint16_t UdpPort = 57890;
+
 static uint ServoPwmSlice = 0;
+static uint UpdateCounter = 0;
+static udp_pcb* Udp = nullptr;
 
 void setServoDuty(uint dutyUs) {
 	pwm_set_chan_level(ServoPwmSlice, 0, dutyUs);
+}
+
+void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
+	printf("received %u bytes in update iteration %u\n", p->len, UpdateCounter);
+	pbuf_free(p);
 }
 
 void init() {
@@ -48,6 +57,14 @@ void init() {
 	} else {
 		printf("Connected.\n");
 	}
+
+	Udp = udp_new();
+	if (udp_bind(Udp, IP_ADDR_ANY, UdpPort) != ERR_OK) {
+		printf("failed to bind.\n");
+		exit(3);
+	}
+	udp_recv(Udp, udpReceiveCallback, nullptr);
+	printf("Listenint on %u...\n", UdpPort);
 
 	gpio_init(LedYellow);
 	gpio_set_dir(LedYellow, GPIO_OUT);
@@ -72,6 +89,7 @@ void update() {
 	sleep_ms(1000);
 
 	cyw43_arch_poll();
+	++UpdateCounter;
 }
 
 int main() {
