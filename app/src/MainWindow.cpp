@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "DeviceWidget.h"
 #include "ui_mainwindow.h"
 
 #include <QDebug>
@@ -24,16 +25,12 @@ void MainWindow::updateDeviceList(const QList<Device> &devices)
 	ui->hostListWidget->clear();
 	for (const auto &device : devices)
 	{
-		QString itemText = device.getName() + " (" + device.getAddress().toString() + ")"; // Display name and address
-		QListWidgetItem *item = new QListWidgetItem(itemText);
-		if (device.getStatus() == DeviceStatus::Online)
-		{
-			item->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-		}
-		else
-		{
-			item->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
-		}
+		DeviceWidget *deviceWidget = new DeviceWidget(ui->hostListWidget); // Create a new widget
+		deviceWidget->setDevice(device);
+
+		QListWidgetItem *item = new QListWidgetItem();
+		item->setSizeHint(deviceWidget->sizeHint()); // Set item size to widget size
 		ui->hostListWidget->addItem(item);
+		ui->hostListWidget->setItemWidget(item, deviceWidget); // Set the widget for the item
 	}
 }
