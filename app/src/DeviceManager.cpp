@@ -4,7 +4,7 @@
 #include <QDateTime>
 
 DeviceManager::DeviceManager(QObject *parent)
-	: QObject(parent), udpSocket(new QUdpSocket(this))
+		: QObject(parent), udpSocket(new QUdpSocket(this))
 {
 	connect(udpSocket, &QUdpSocket::readyRead, this, &DeviceManager::processPendingDatagrams);
 
@@ -27,6 +27,13 @@ DeviceManager::~DeviceManager()
 QList<Device> DeviceManager::getDevices() const
 {
 	return devices;
+}
+
+void DeviceManager::sendCommand(const Device &device, const QString &command)
+{
+	QByteArray datagram = command.toUtf8();
+	udpSocket->writeDatagram(datagram, device.getAddress(), device.getPort()); // Use device's port
+	qDebug() << "Sent command '" << command << "' to" << device.getAddress().toString() << ":" << device.getPort();
 }
 
 void DeviceManager::processPendingDatagrams()
@@ -62,14 +69,15 @@ void DeviceManager::processPendingDatagrams()
 			{
 				device.setLastSeen(QDateTime::currentDateTime());
 				device.setStatus(DeviceStatus::Online);
-				device.setName(deviceName); // Update device name
+				device.setName(deviceName);
+				device.setPort(senderPort);
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 		{
-			devices.append(Device(sender, deviceName));
+			devices.append(Device(sender, deviceName, senderPort));
 		}
 
 		emit devicesUpdated(devices);

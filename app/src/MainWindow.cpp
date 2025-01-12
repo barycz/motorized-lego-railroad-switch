@@ -3,10 +3,9 @@
 #include "ui_mainwindow.h"
 
 #include <QDebug>
-#include <QListWidgetItem>
 
 MainWindow::MainWindow(QWidget *parent)
-	: QMainWindow(parent), ui(new Ui::MainWindow), deviceManager(this)
+		: QMainWindow(parent), ui(new Ui::MainWindow), deviceManager(this)
 {
 	ui->setupUi(this);
 	connect(&deviceManager, &DeviceManager::devicesUpdated, this, &MainWindow::updateDeviceList);
@@ -25,12 +24,18 @@ void MainWindow::updateDeviceList(const QList<Device> &devices)
 	ui->hostListWidget->clear();
 	for (const auto &device : devices)
 	{
-		DeviceWidget *deviceWidget = new DeviceWidget(ui->hostListWidget); // Create a new widget
+		DeviceWidget *deviceWidget = new DeviceWidget(ui->hostListWidget);
 		deviceWidget->setDevice(device);
+		connect(deviceWidget, &DeviceWidget::buttonClicked, this, &MainWindow::handleButtonClicked);
 
 		QListWidgetItem *item = new QListWidgetItem();
-		item->setSizeHint(deviceWidget->sizeHint()); // Set item size to widget size
+		item->setSizeHint(deviceWidget->sizeHint());
 		ui->hostListWidget->addItem(item);
-		ui->hostListWidget->setItemWidget(item, deviceWidget); // Set the widget for the item
+		ui->hostListWidget->setItemWidget(item, deviceWidget);
 	}
+}
+
+void MainWindow::handleButtonClicked(const Device &device, const QString &button)
+{
+	deviceManager.sendCommand(device, button); // Pass the Device instance to DeviceManager
 }

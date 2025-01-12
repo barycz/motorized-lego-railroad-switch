@@ -13,12 +13,14 @@ enum class DeviceStatus
 class Device
 {
 public:
-	Device(const QHostAddress &address, const QString &name)
-		: address(address), name(name), status(DeviceStatus::Online), lastSeen(QDateTime::currentDateTime()) {}
+	Device(const QHostAddress &address, const QString &name, quint16 port)
+		: address(address), name(name), port(port), status(DeviceStatus::Online), lastSeen(QDateTime::currentDateTime()) {}
 
 	QHostAddress getAddress() const { return address; }
 	QString getName() const { return name; }
 	void setName(const QString &name) { this->name = name; }
+	quint16 getPort() const { return port; }
+	void setPort(quint16 port) { this->port = port; }
 	DeviceStatus getStatus() const { return status; }
 	void setStatus(DeviceStatus status) { this->status = status; }
 	QDateTime getLastSeen() const { return lastSeen; }
@@ -27,6 +29,7 @@ public:
 private:
 	QHostAddress address;
 	QString name;
+	quint16 port;
 	DeviceStatus status;
 	QDateTime lastSeen;
 };

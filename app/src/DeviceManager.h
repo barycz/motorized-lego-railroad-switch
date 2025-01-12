@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Device.h"
+
 #include <QObject>
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QTimer>
 #include <QList>
-#include "device.h"
 
 class DeviceManager : public QObject
 {
@@ -16,6 +17,7 @@ public:
 	~DeviceManager();
 
 	QList<Device> getDevices() const;
+	void sendCommand(const Device &device, const QString &command);
 
 signals:
 	void devicesUpdated(const QList<Device> &devices);

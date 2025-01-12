@@ -19,6 +19,7 @@ public:
 
 private slots:
 	void updateDeviceList(const QList<Device> &devices);
+	void handleButtonClicked(const Device& device, const QString& button);
 
 private:
 	Ui::MainWindow *ui;

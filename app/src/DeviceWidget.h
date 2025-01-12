@@ -16,8 +16,18 @@ public:
 	explicit DeviceWidget(QWidget *parent = nullptr);
 	~DeviceWidget();
 
-	void setDevice(const Device& device);
+	void setDevice(const Device &device);
+	const Device *getCurrentDevice() const; // Add getter for the current device
+
+signals:
+	void buttonClicked(const Device &device, const QString &button); // Emit Device instance
+
+private slots:
+	void onLeftButtonClicked();
+	void onCenterButtonClicked();
+	void onRightButtonClicked();
 
 private:
 	Ui::DeviceWidget *ui;
+	const Device *currentDevice;
 };
