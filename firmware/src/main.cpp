@@ -16,6 +16,8 @@
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 
+#include "RailwayProtocol.h"
+
 const uint LedYellow = 1;
 
 const uint ServoPwmOut = 0;
@@ -29,10 +31,24 @@ const uint16_t UdpPort = 57890;
 
 static uint ServoPwmSlice = 0;
 static uint UpdateCounter = 0;
+static uint LastBeacon = 0;
 static udp_pcb* Udp = nullptr;
 
 void setServoDuty(uint dutyUs) {
 	pwm_set_chan_level(ServoPwmSlice, 0, dutyUs);
+}
+
+void udpBroadcastBeacon() {
+	static const size_t BeaconSize = 32;
+	uint8_t buffer[BeaconSize];
+	const size_t packetSize = RailwayProtocol::Packet::NewBeacon(buffer, BeaconSize, "Switch");
+	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
+	memcpy(p->payload, buffer, packetSize);
+	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, UdpPort);
+	if (er != ERR_OK) {
+		printf("Failed to send beacon.\n");
+	}
+	pbuf_free(p);
 }
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
@@ -51,12 +67,10 @@ void init() {
 	cyw43_arch_enable_sta_mode();
 
 	printf("Connecting to Wi-Fi '%s'...\n", WIFI_SSID);
-	if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-		printf("failed to connect.\n");
-		exit(2);
-	} else {
-		printf("Connected.\n");
+	while (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+		printf("failed to connect, retrying ...\n");
 	}
+	printf("Connected.\n");
 
 	Udp = udp_new();
 	if (udp_bind(Udp, IP_ADDR_ANY, UdpPort) != ERR_OK) {
@@ -64,7 +78,7 @@ void init() {
 		exit(3);
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
-	printf("Listenint on %u...\n", UdpPort);
+	printf("Listening on %u...\n", UdpPort);
 
 	gpio_init(LedYellow);
 	gpio_set_dir(LedYellow, GPIO_OUT);
@@ -81,12 +95,17 @@ void update() {
 	gpio_put(LedYellow, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 	setServoDuty(ServoDutyMinUs);
-	sleep_ms(1000);
+	sleep_ms(500);
 
 	gpio_put(LedYellow, 0);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 	setServoDuty(ServoDutyMaxUs);
-	sleep_ms(1000);
+	sleep_ms(500);
+
+	if (UpdateCounter >= LastBeacon + 2) {
+		LastBeacon = UpdateCounter;
+		udpBroadcastBeacon();
+	}
 
 	cyw43_arch_poll();
 	++UpdateCounter;

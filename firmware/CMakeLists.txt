@@ -30,7 +30,11 @@ set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-add_executable(train-switch-firmware src/main.cpp)
+add_executable(train-switch-firmware
+	src/main.cpp
+	src/RailwayProtocol.h
+	src/RailwayProtocol.cpp
+)
 
 pico_enable_stdio_usb(train-switch-firmware 1)
 pico_enable_stdio_uart(train-switch-firmware 0)
