@@ -9,6 +9,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+class DeviceWidget;
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -22,6 +24,8 @@ private slots:
 	void handleButtonClicked(const Device& device, const QString& button);
 
 private:
+	DeviceWidget* getOrCreateWidget(const Device& device);
+
 	Ui::MainWindow *ui;
 	DeviceManager deviceManager;
 	QIcon windowIcon;

@@ -29,9 +29,11 @@ QList<Device> DeviceManager::getDevices() const
 	return devices;
 }
 
-void DeviceManager::sendCommand(const Device &device, const QString &command)
+void DeviceManager::sendCommand(const Device &device, char command)
 {
-	QByteArray datagram = command.toUtf8();
+	const char header[] = {'R', 0x01, 0x02};
+	QByteArray datagram(header, sizeof(header));
+	datagram.append(&command, 1);
 	udpSocket->writeDatagram(datagram, device.getAddress(), device.getPort()); // Use device's port
 	qDebug() << "Sent command '" << command << "' to" << device.getAddress().toString() << ":" << device.getPort();
 }

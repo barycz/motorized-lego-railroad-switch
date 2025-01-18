@@ -38,6 +38,32 @@ void setServoDuty(uint dutyUs) {
 	pwm_set_chan_level(ServoPwmSlice, 0, dutyUs);
 }
 
+void setSwitch(RailwayProtocol::ESwitchDirection dir) {
+	printf("setSwitch %u\n", static_cast<uint>(dir));
+	switch (dir) {
+		case RailwayProtocol::ESwitchDirection::Center:
+			setServoDuty(ServoDutyMidUs);
+			break;
+		case RailwayProtocol::ESwitchDirection::Left:
+			setServoDuty(ServoDutyMinUs);
+			break;
+		case RailwayProtocol::ESwitchDirection::Right:
+			setServoDuty(ServoDutyMaxUs);
+			break;
+	}
+}
+
+void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet) {
+	switch (packet.MsgType) {
+		case RailwayProtocol::Packet::EMsgType::SetSwitch:
+			setSwitch(static_cast<RailwayProtocol::ESwitchDirection>(packet.Data[0]));
+			break;
+		default:
+			printf("unhandled RailwayProtocol packet\n");
+			break;
+	}
+}
+
 void udpBroadcastBeacon() {
 	static const size_t BeaconSize = 32;
 	uint8_t buffer[BeaconSize];
@@ -53,11 +79,27 @@ void udpBroadcastBeacon() {
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
 	printf("received %u bytes in update iteration %u\n", p->len, UpdateCounter);
+	const RailwayProtocol::Packet* packet = RailwayProtocol::Packet::FromBuffer(p->payload, p->len);
+	if (packet) {
+		handleRailwayProtocolPacket(*packet);
+	} else {
+		printf("skipping incorrect data\n");
+	}
 	pbuf_free(p);
 }
 
 void init() {
 	stdio_init_all();
+
+	gpio_init(LedYellow);
+	gpio_set_dir(LedYellow, GPIO_OUT);
+
+	gpio_set_function(ServoPwmOut, GPIO_FUNC_PWM);
+	ServoPwmSlice = pwm_gpio_to_slice_num(ServoPwmOut);
+	pwm_set_clkdiv_int_frac(ServoPwmSlice, ServoClkDivider, 0);
+	pwm_set_wrap(ServoPwmSlice, ServoPeriodUs);
+	pwm_set_chan_level(ServoPwmSlice, 0, ServoDutyMinUs);
+	pwm_set_enabled(ServoPwmSlice, true);
 
 	if (cyw43_arch_init()) {
 		printf("Wi-Fi init failed");
@@ -79,28 +121,18 @@ void init() {
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
 	printf("Listening on %u...\n", UdpPort);
-
-	gpio_init(LedYellow);
-	gpio_set_dir(LedYellow, GPIO_OUT);
-
-	gpio_set_function(ServoPwmOut, GPIO_FUNC_PWM);
-	ServoPwmSlice = pwm_gpio_to_slice_num(ServoPwmOut);
-	pwm_set_clkdiv_int_frac(ServoPwmSlice, ServoClkDivider, 0);
-	pwm_set_wrap(ServoPwmSlice, ServoPeriodUs);
-	pwm_set_chan_level(ServoPwmSlice, 0, ServoDutyMidUs);
-	pwm_set_enabled(ServoPwmSlice, true);
 }
 
 void update() {
 	gpio_put(LedYellow, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-	setServoDuty(ServoDutyMinUs);
-	sleep_ms(500);
+	//setServoDuty(ServoDutyMinUs);
+	sleep_ms(50);
 
 	gpio_put(LedYellow, 0);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-	setServoDuty(ServoDutyMaxUs);
-	sleep_ms(500);
+	//setServoDuty(ServoDutyMaxUs);
+	sleep_ms(50);
 
 	if (UpdateCounter >= LastBeacon + 2) {
 		LastBeacon = UpdateCounter;

@@ -17,7 +17,7 @@ public:
 	~DeviceManager();
 
 	QList<Device> getDevices() const;
-	void sendCommand(const Device &device, const QString &command);
+	void sendCommand(const Device &device, char command);
 
 signals:
 	void devicesUpdated(const QList<Device> &devices);

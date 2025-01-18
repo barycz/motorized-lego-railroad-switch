@@ -21,21 +21,55 @@ MainWindow::~MainWindow()
 
 void MainWindow::updateDeviceList(const QList<Device> &devices)
 {
-	ui->hostListWidget->clear();
 	for (const auto &device : devices)
 	{
-		DeviceWidget *deviceWidget = new DeviceWidget(ui->hostListWidget);
-		deviceWidget->setDevice(device);
-		connect(deviceWidget, &DeviceWidget::buttonClicked, this, &MainWindow::handleButtonClicked);
-
-		QListWidgetItem *item = new QListWidgetItem();
-		item->setSizeHint(deviceWidget->sizeHint());
-		ui->hostListWidget->addItem(item);
-		ui->hostListWidget->setItemWidget(item, deviceWidget);
+		auto* deviceWidget = getOrCreateWidget(device);
+		if (deviceWidget)
+		{
+			deviceWidget->setDevice(device); // set the device to refresh the ui
+		}
 	}
+}
+
+DeviceWidget* MainWindow::getOrCreateWidget(const Device& device)
+{
+	for (int i = 0; i < ui->hostListWidget->count(); ++i)
+	{
+		QListWidgetItem* item = ui->hostListWidget->item(i);
+		if (item)
+		{
+			QWidget* widget = ui->hostListWidget->itemWidget(item);
+			DeviceWidget* dw = qobject_cast<DeviceWidget*>(widget);
+			if (dw && dw->getCurrentDevice() == &device)
+			{
+				return dw;
+			}
+		}
+	}
+
+	DeviceWidget *deviceWidget = new DeviceWidget(ui->hostListWidget);
+	deviceWidget->setDevice(device);
+	connect(deviceWidget, &DeviceWidget::buttonClicked, this, &MainWindow::handleButtonClicked);
+
+	QListWidgetItem *item = new QListWidgetItem();
+	item->setSizeHint(deviceWidget->sizeHint());
+	ui->hostListWidget->addItem(item);
+	ui->hostListWidget->setItemWidget(item, deviceWidget);
+	return deviceWidget;
 }
 
 void MainWindow::handleButtonClicked(const Device &device, const QString &button)
 {
-	deviceManager.sendCommand(device, button); // Pass the Device instance to DeviceManager
+	if (button == "center")
+	{
+		deviceManager.sendCommand(device, 0);
+	}
+	else if (button == "left")
+	{
+		deviceManager.sendCommand(device, 1);
+	}
+	else
+	{
+		deviceManager.sendCommand(device, 2);
+	}
 }
