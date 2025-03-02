@@ -23,9 +23,11 @@ struct Packet {
 	enum class EMsgType: uint8_t {
 		Beacon = 1,
 		SetSwitch = 2,
+		Status = 3,
 	};
 
 	static size_t NewBeacon(void* buffer, size_t bufferSize, const char* deviceName);
+	static size_t NewStatus(void* buffer, size_t bufferSize, ESwitchDirection dir);
 	static Packet* FromBuffer(void* buffer, size_t bufferSize);
 
 	EMagic Magic;

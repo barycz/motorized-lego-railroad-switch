@@ -18,6 +18,15 @@ size_t Packet::NewBeacon(void* buffer, size_t bufferSize, const char* deviceName
 	return sizeof(*packet) + toCopyLen + 1;
 }
 
+size_t Packet::NewStatus(void* buffer, size_t bufferSize, ESwitchDirection dir) {
+	Packet* packet = static_cast<Packet*>(buffer);
+	packet->Magic = EMagic::Magic;
+	packet->Version = EVersion::V1;
+	packet->MsgType = EMsgType::Status;
+	packet->Data[0] = static_cast<uint8_t>(dir);
+	return sizeof(*packet) + 1;
+}
+
 Packet* Packet::FromBuffer(void* buffer, size_t bufferSize) {
 	// for simplicity now expect always at least one byte of data after the header
 	if (bufferSize < PacketSize + 1) {

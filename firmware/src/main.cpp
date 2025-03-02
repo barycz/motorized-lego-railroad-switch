@@ -28,11 +28,15 @@ const uint ServoDutyMidUs = (ServoDutyMaxUs + ServoDutyMinUs) / 2;
 const uint ServoClkDivider = SYS_CLK_KHZ / 1000;
 
 const uint16_t UdpPort = 57890;
+const uint32_t BeaconIntervalUs = 1000000;
+const uint32_t StatusIntervalUs = 1500000;
 
 static uint ServoPwmSlice = 0;
 static uint UpdateCounter = 0;
-static uint LastBeacon = 0;
+static uint32_t LastBeaconUs = 0;
+static uint32_t LastStatusUs = 0;
 static udp_pcb* Udp = nullptr;
+static RailwayProtocol::ESwitchDirection SwitchDir;
 
 void setServoDuty(uint dutyUs) {
 	pwm_set_chan_level(ServoPwmSlice, 0, dutyUs);
@@ -40,6 +44,7 @@ void setServoDuty(uint dutyUs) {
 
 void setSwitch(RailwayProtocol::ESwitchDirection dir) {
 	printf("setSwitch %u\n", static_cast<uint>(dir));
+	SwitchDir = dir;
 	switch (dir) {
 		case RailwayProtocol::ESwitchDirection::Center:
 			setServoDuty(ServoDutyMidUs);
@@ -77,6 +82,19 @@ void udpBroadcastBeacon() {
 	pbuf_free(p);
 }
 
+void udpBroadcastStatus() {
+	static const size_t StatusSize = 32;
+	uint8_t buffer[StatusSize];
+	const size_t packetSize = RailwayProtocol::Packet::NewStatus(buffer, StatusSize, SwitchDir);
+	struct pbuf* p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
+	memcpy(p->payload, buffer, packetSize);
+	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, UdpPort);
+	if (er != ERR_OK) {
+		printf("Failed to send beacon.\n");
+	}
+	pbuf_free(p);
+}
+
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
 	printf("received %u bytes in update iteration %u\n", p->len, UpdateCounter);
 	const RailwayProtocol::Packet* packet = RailwayProtocol::Packet::FromBuffer(p->payload, p->len);
@@ -98,7 +116,7 @@ void init() {
 	ServoPwmSlice = pwm_gpio_to_slice_num(ServoPwmOut);
 	pwm_set_clkdiv_int_frac(ServoPwmSlice, ServoClkDivider, 0);
 	pwm_set_wrap(ServoPwmSlice, ServoPeriodUs);
-	pwm_set_chan_level(ServoPwmSlice, 0, ServoDutyMinUs);
+	setSwitch(RailwayProtocol::ESwitchDirection::Left);
 	pwm_set_enabled(ServoPwmSlice, true);
 
 	if (cyw43_arch_init()) {
@@ -134,9 +152,14 @@ void update() {
 	//setServoDuty(ServoDutyMaxUs);
 	sleep_ms(50);
 
-	if (UpdateCounter >= LastBeacon + 2) {
-		LastBeacon = UpdateCounter;
+	if (time_us_32() >= LastBeaconUs + BeaconIntervalUs) {
 		udpBroadcastBeacon();
+		LastBeaconUs = time_us_32();
+	}
+
+	if (time_us_32() >= LastStatusUs + StatusIntervalUs) {
+		udpBroadcastStatus();
+		LastStatusUs = time_us_32();
 	}
 
 	cyw43_arch_poll();
