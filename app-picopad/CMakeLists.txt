@@ -64,9 +64,9 @@ target_link_libraries(${FIRMWARE}
 )
 
 target_compile_definitions(${FIRMWARE} PRIVATE
-  HAGL_HAL_USE_DOUBLE_BUFFER
-  HAGL_HAL_USE_DMA
-  HAGL_HAL_DEBUG
+	HAGL_HAL_USE_DOUBLE_BUFFER
+	HAGL_HAL_USE_DMA
+	HAGL_HAL_DEBUG
 )
 
 include(boards/Picopad.cmake)
