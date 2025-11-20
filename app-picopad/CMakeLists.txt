@@ -23,32 +23,50 @@ endif()
 
 include(pico_sdk_import.cmake)
 
-project(app-picopad C CXX ASM)
+set(FIRMWARE app-picopad)
+
+project(${FIRMWARE} C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-add_executable(app-picopad
+add_subdirectory(external/hagl)
+add_subdirectory(external/hagl_hal)
+
+add_executable(${FIRMWARE}
 	src/main.cpp
 )
 
-pico_enable_stdio_usb(app-picopad 1)
-pico_enable_stdio_uart(app-picopad 0)
+# the simplest way to get running on Picopad using the provided SDK and an SD card
+pico_set_binary_type(${FIRMWARE} no_flash)
 
-pico_add_extra_outputs(app-picopad)
+pico_enable_stdio_usb(${FIRMWARE} 1)
+pico_enable_stdio_uart(${FIRMWARE} 0)
 
-target_compile_definitions(app-picopad PRIVATE
+pico_add_extra_outputs(${FIRMWARE})
+
+target_compile_definitions(${FIRMWARE} PRIVATE
 	WIFI_SSID=\"${WIFI_SSID}\"
 	WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
 )
 
-target_include_directories(app-picopad PRIVATE
+target_include_directories(${FIRMWARE} PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}/src
 )
 
-target_link_libraries(app-picopad
+target_link_libraries(${FIRMWARE}
 	pico_cyw43_arch_lwip_poll
 	pico_stdlib
+	hagl
+	hagl_hal
 )
+
+target_compile_definitions(${FIRMWARE} PRIVATE
+  HAGL_HAL_USE_DOUBLE_BUFFER
+  HAGL_HAL_USE_DMA
+  HAGL_HAL_DEBUG
+)
+
+include(boards/Picopad.cmake)

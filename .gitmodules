@@ -1,0 +1,6 @@
+[submodule "app-picopad/external/hagl_hal"]
+	path = app-picopad/external/hagl_hal
+	url = https://github.com/tuupola/hagl_pico_mipi.git
+[submodule "app-picopad/external/hagl"]
+	path = app-picopad/external/hagl
+	url = https://github.com/tuupola/hagl.git
