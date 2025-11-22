@@ -27,10 +27,6 @@ const uint ServoDutyMaxUs = 1700;
 const uint ServoDutyMidUs = (ServoDutyMaxUs + ServoDutyMinUs) / 2;
 const uint ServoClkDivider = SYS_CLK_KHZ / 1000;
 
-const uint16_t UdpPort = 57890;
-const uint32_t BeaconIntervalUs = 1000000;
-const uint32_t StatusIntervalUs = 1500000;
-
 static uint ServoPwmSlice = 0;
 static uint UpdateCounter = 0;
 static uint32_t LastBeaconUs = 0;
@@ -75,7 +71,7 @@ void udpBroadcastBeacon() {
 	const size_t packetSize = RailwayProtocol::Packet::NewBeacon(buffer, BeaconSize, "Switch");
 	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
 	memcpy(p->payload, buffer, packetSize);
-	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, UdpPort);
+	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, RailwayProtocol::UdpPort);
 	if (er != ERR_OK) {
 		printf("Failed to send beacon.\n");
 	}
@@ -88,7 +84,7 @@ void udpBroadcastStatus() {
 	const size_t packetSize = RailwayProtocol::Packet::NewStatus(buffer, StatusSize, SwitchDir);
 	struct pbuf* p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
 	memcpy(p->payload, buffer, packetSize);
-	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, UdpPort);
+	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, RailwayProtocol::UdpPort);
 	if (er != ERR_OK) {
 		printf("Failed to send beacon.\n");
 	}
@@ -133,31 +129,29 @@ void init() {
 	printf("Connected.\n");
 
 	Udp = udp_new();
-	if (udp_bind(Udp, IP_ADDR_ANY, UdpPort) != ERR_OK) {
+	if (udp_bind(Udp, IP_ADDR_ANY, RailwayProtocol::UdpPort) != ERR_OK) {
 		printf("failed to bind.\n");
 		exit(3);
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
-	printf("Listening on %u...\n", UdpPort);
+	printf("Listening on %u...\n", RailwayProtocol::UdpPort);
 }
 
 void update() {
 	gpio_put(LedYellow, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-	//setServoDuty(ServoDutyMinUs);
 	sleep_ms(50);
 
 	gpio_put(LedYellow, 0);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-	//setServoDuty(ServoDutyMaxUs);
 	sleep_ms(50);
 
-	if (time_us_32() >= LastBeaconUs + BeaconIntervalUs) {
+	if (time_us_32() >= LastBeaconUs + RailwayProtocol::BeaconIntervalUs) {
 		udpBroadcastBeacon();
 		LastBeaconUs = time_us_32();
 	}
 
-	if (time_us_32() >= LastStatusUs + StatusIntervalUs) {
+	if (time_us_32() >= LastStatusUs + RailwayProtocol::StatusIntervalUs) {
 		udpBroadcastStatus();
 		LastStatusUs = time_us_32();
 	}

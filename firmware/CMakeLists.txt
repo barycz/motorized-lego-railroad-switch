@@ -32,8 +32,8 @@ pico_sdk_init()
 
 add_executable(train-switch-firmware
 	src/main.cpp
-	src/RailwayProtocol.h
-	src/RailwayProtocol.cpp
+	../shared/RailwayProtocol.h
+	../shared/RailwayProtocol.cpp
 )
 
 pico_enable_stdio_usb(train-switch-firmware 1)
@@ -48,6 +48,7 @@ target_compile_definitions(train-switch-firmware PRIVATE
 
 target_include_directories(train-switch-firmware PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}/src
+	${CMAKE_CURRENT_LIST_DIR}/../shared
 )
 
 target_link_libraries(train-switch-firmware

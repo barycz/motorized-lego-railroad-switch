@@ -39,4 +39,8 @@ struct Packet {
 static constexpr auto PacketSize = sizeof(Packet);
 static_assert(PacketSize == 3);
 
+const uint16_t UdpPort = 57890;
+const uint32_t BeaconIntervalUs = 1000000;
+const uint32_t StatusIntervalUs = 1500000;
+
 }

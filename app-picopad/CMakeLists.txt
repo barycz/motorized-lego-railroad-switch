@@ -37,10 +37,10 @@ add_subdirectory(external/hagl_hal)
 
 add_executable(${FIRMWARE}
 	src/main.cpp
+	src/lwipopts.h
+	../shared/RailwayProtocol.cpp
+	../shared/RailwayProtocol.h
 )
-
-# the simplest way to get running on Picopad using the provided SDK and an SD card
-pico_set_binary_type(${FIRMWARE} no_flash)
 
 pico_enable_stdio_usb(${FIRMWARE} 1)
 pico_enable_stdio_uart(${FIRMWARE} 0)
@@ -54,6 +54,7 @@ target_compile_definitions(${FIRMWARE} PRIVATE
 
 target_include_directories(${FIRMWARE} PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}/src
+	${CMAKE_CURRENT_LIST_DIR}/../shared
 )
 
 target_link_libraries(${FIRMWARE}
@@ -64,7 +65,7 @@ target_link_libraries(${FIRMWARE}
 )
 
 target_compile_definitions(${FIRMWARE} PRIVATE
-	HAGL_HAL_USE_DOUBLE_BUFFER
+	HAGL_HAL_USE_SINGLE_BUFFER
 	HAGL_HAL_USE_DMA
 	HAGL_HAL_DEBUG
 )

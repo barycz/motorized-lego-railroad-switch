@@ -8,20 +8,79 @@
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 
+#include "RailwayProtocol.h"
+
 #include "hagl_hal.h"
 #include "hagl.h"
 #include "font6x9.h"
+#include "fontx.h"
+
+#include <stdarg.h>
 
 const uint LedUsr = 22;
-const uint16_t UdpPort = 57890;
 
 static uint UpdateCounter = 0;
 static udp_pcb* Udp = nullptr;
 
 static hagl_backend_t *Display = nullptr;
 
+// draw text to display using round robin line buffer
+struct DebugLog {
+	void Log(const char* format, ...);
+	void Flush();
+
+private:
+	uint16_t DrawLine(uint16_t y, const char* text);
+
+	static const uint8_t LineCount = 4;
+	char buffer[LineCount][256];
+	uint8_t lineIndex;
+};
+
+void DebugLog::Log(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	vsnprintf(buffer[lineIndex], sizeof(buffer[lineIndex]), format, args);
+	va_end(args);
+
+	printf("%s\n", buffer[lineIndex]);
+	lineIndex = (lineIndex + 1) % LineCount;
+
+	Flush();
+}
+
+uint16_t DebugLog::DrawLine(uint16_t y, const char* text) {
+	fontx_meta_t meta;
+	fontx_meta(&meta, font6x9);
+
+	uint16_t x = 0;
+
+	do {
+		wchar_t temp = *text++;
+		if (13 == temp || 10 == temp) {
+			x = 0;
+			y += meta.height;
+		} else {
+			x += hagl_put_char(Display, temp, x, y,  hagl_color(Display, 255, 255, 255), font6x9);
+		}
+	} while (*text != 0);
+
+	return y + meta.height;
+}
+
+void DebugLog::Flush() {
+	hagl_clear(Display);
+	uint16_t y = 0;
+	for (uint8_t i = 0; i < LineCount; i++) {
+		y = DrawLine(y, buffer[(i + lineIndex) % LineCount]);
+	}
+	hagl_flush(Display);
+}
+
+DebugLog dbgLog;
+
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
-	printf("received %u bytes in update iteration %u\n", p->len, UpdateCounter);
+	dbgLog.Log("received %u bytes in update iteration %u", p->len, UpdateCounter);
 	pbuf_free(p);
 }
 
@@ -35,54 +94,37 @@ void init() {
 	Display = hagl_init();
 	hagl_clear(Display);
 
-	hagl_put_text(Display, L"Initializing ...", 0, 0, hagl_color(Display, 255, 255, 255), font6x9);
-	hagl_flush(Display);
+	dbgLog.Log("Initializing ...");
 
-#if 0
 	if (cyw43_arch_init()) {
-		printf("Wi-Fi init failed");
+		dbgLog.Log("Wi-Fi init failed");
 		exit(1);
 	}
 
 	cyw43_arch_enable_sta_mode();
 
-	printf("Connecting to Wi-Fi '%s'...\n", WIFI_SSID);
+	dbgLog.Log("Connecting to Wi-Fi '%s'...", WIFI_SSID);
 	while (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-		printf("failed to connect, retrying ...\n");
+		dbgLog.Log("failed to connect, retrying ...");
 	}
-	printf("Connected.\n");
+	dbgLog.Log("Connected.");
 
 	Udp = udp_new();
-	if (udp_bind(Udp, IP_ADDR_ANY, UdpPort) != ERR_OK) {
-		printf("failed to bind.\n");
+	if (udp_bind(Udp, IP_ADDR_ANY, RailwayProtocol::UdpPort) != ERR_OK) {
+		dbgLog.Log("failed to bind.");
 		exit(3);
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
-	printf("Listening on %u...\n", UdpPort);
-#endif
-}
-
-void hagl_demo() {
-	hagl_clear(Display);
-	for (uint16_t i = 1; i < 500; i++) {
-		int16_t x0 = rand() % Display->width;
-		int16_t y0 = rand() % Display->height;
-		int16_t radius = rand() % 100;
-		hagl_color_t color = rand() % 0xffff;
-
-		hagl_fill_circle(Display, x0, y0, radius, color);
-	}
-	hagl_flush(Display);
+	dbgLog.Log("Listening on %u...", RailwayProtocol::UdpPort);
 }
 
 void update() {
 	gpio_put(LedUsr, 1);
-	//cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-	//sleep_ms(50);
-	hagl_demo();
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+	sleep_ms(50);
 
 	gpio_put(LedUsr, 0);
-	//cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 	sleep_ms(50);
 
 	cyw43_arch_poll();
