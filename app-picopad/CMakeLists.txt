@@ -38,6 +38,8 @@ add_subdirectory(external/hagl_hal)
 add_executable(${FIRMWARE}
 	src/main.cpp
 	src/lwipopts.h
+	src/DebugLog.cpp
+	src/DebugLog.h
 	../shared/RailwayProtocol.cpp
 	../shared/RailwayProtocol.h
 )

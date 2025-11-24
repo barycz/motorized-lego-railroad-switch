@@ -1,21 +1,20 @@
-#include "pico/stdlib.h"
-#include "pico/binary_info.h"
-#include "hardware/uart.h"
-#include "hardware/timer.h"
+
+#include "DebugLog.h"
+
+#include "RailwayProtocol.h"
+
+#include "hagl_hal.h"
+#include "hagl.h"
 
 #include "pico/cyw43_arch.h"
 
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
 
-#include "RailwayProtocol.h"
-
-#include "hagl_hal.h"
-#include "hagl.h"
-#include "font6x9.h"
-#include "fontx.h"
-
-#include <stdarg.h>
+#include "pico/stdlib.h"
+#include "pico/binary_info.h"
+#include "hardware/uart.h"
+#include "hardware/timer.h"
 
 const uint LedUsr = 22;
 
@@ -23,64 +22,10 @@ static uint UpdateCounter = 0;
 static udp_pcb* Udp = nullptr;
 
 static hagl_backend_t *Display = nullptr;
-
-// draw text to display using round robin line buffer
-struct DebugLog {
-	void Log(const char* format, ...);
-	void Flush();
-
-private:
-	uint16_t DrawLine(uint16_t y, const char* text);
-
-	static const uint8_t LineCount = 4;
-	char buffer[LineCount][256];
-	uint8_t lineIndex;
-};
-
-void DebugLog::Log(const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	vsnprintf(buffer[lineIndex], sizeof(buffer[lineIndex]), format, args);
-	va_end(args);
-
-	printf("%s\n", buffer[lineIndex]);
-	lineIndex = (lineIndex + 1) % LineCount;
-
-	Flush();
-}
-
-uint16_t DebugLog::DrawLine(uint16_t y, const char* text) {
-	fontx_meta_t meta;
-	fontx_meta(&meta, font6x9);
-
-	uint16_t x = 0;
-
-	do {
-		wchar_t temp = *text++;
-		if (13 == temp || 10 == temp) {
-			x = 0;
-			y += meta.height;
-		} else {
-			x += hagl_put_char(Display, temp, x, y,  hagl_color(Display, 255, 255, 255), font6x9);
-		}
-	} while (*text != 0);
-
-	return y + meta.height;
-}
-
-void DebugLog::Flush() {
-	hagl_clear(Display);
-	uint16_t y = 0;
-	for (uint8_t i = 0; i < LineCount; i++) {
-		y = DrawLine(y, buffer[(i + lineIndex) % LineCount]);
-	}
-	hagl_flush(Display);
-}
-
-DebugLog dbgLog;
+DebugLog dbgLog(&Display);
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
-	dbgLog.Log("received %u bytes in update iteration %u", p->len, UpdateCounter);
+	dbgLog.Log("[%u] received %u bytes from %s", UpdateCounter, p->len, ipaddr_ntoa(addr));
 	pbuf_free(p);
 }
 
