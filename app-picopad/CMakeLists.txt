@@ -35,14 +35,9 @@ pico_sdk_init()
 add_subdirectory(external/hagl)
 add_subdirectory(external/hagl_hal)
 
-add_executable(${FIRMWARE}
-	src/main.cpp
-	src/lwipopts.h
-	src/DebugLog.cpp
-	src/DebugLog.h
-	../shared/RailwayProtocol.cpp
-	../shared/RailwayProtocol.h
-)
+file(GLOB_RECURSE FIRMWARE_SOURCES "src/*.cpp" "src/*.c" "../shared/*.cpp" "../shared/*.c")
+
+add_executable(${FIRMWARE} ${FIRMWARE_SOURCES})
 
 pico_enable_stdio_usb(${FIRMWARE} 1)
 pico_enable_stdio_uart(${FIRMWARE} 0)

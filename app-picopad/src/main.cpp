@@ -2,6 +2,7 @@
 #include "DebugLog.h"
 
 #include "RailwayProtocol.h"
+#include "RailwayDeviceManager.h"
 
 #include "hagl_hal.h"
 #include "hagl.h"
@@ -21,11 +22,18 @@ const uint LedUsr = 22;
 static uint UpdateCounter = 0;
 static udp_pcb* Udp = nullptr;
 
+static RailwayProtocol::DeviceManager DeviceManager;
+
 static hagl_backend_t *Display = nullptr;
 DebugLog dbgLog(&Display);
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
-	dbgLog.Log("[%u] received %u bytes from %s", UpdateCounter, p->len, ipaddr_ntoa(addr));
+	const RailwayProtocol::Packet* packet = RailwayProtocol::Packet::FromBuffer(p->payload, p->len);
+	if (packet) {
+		DeviceManager.OnPacketReceived(*packet, addr, port);
+	} else {
+		dbgLog.Log("[%u] incorrect %u bytes from %s", UpdateCounter, p->len, ipaddr_ntoa(addr));
+	}
 	pbuf_free(p);
 }
 
@@ -73,6 +81,11 @@ void update() {
 	sleep_ms(50);
 
 	cyw43_arch_poll();
+
+	DeviceManager.ForEachDevice([](const RailwayProtocol::Device& device) {
+		dbgLog.Log("Device: %s on %s:%u", device.Name, ipaddr_ntoa(&device.Address), device.Port);
+	});
+
 	++UpdateCounter;
 }
 
