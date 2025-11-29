@@ -28,6 +28,7 @@ struct Packet {
 
 	static size_t NewBeacon(void* buffer, size_t bufferSize, const char* deviceName);
 	static size_t NewStatus(void* buffer, size_t bufferSize, ESwitchDirection dir);
+	static size_t NewSetSwitch(void* buffer, size_t bufferSize, ESwitchDirection dir);
 	static Packet* FromBuffer(void* buffer, size_t bufferSize);
 
 	EMagic Magic;
@@ -41,6 +42,6 @@ static_assert(PacketSize == 3);
 
 const uint16_t UdpPort = 57890;
 const uint32_t BeaconIntervalUs = 1000000;
-const uint32_t StatusIntervalUs = 1500000;
+const uint32_t StatusIntervalUs = 500000;
 
 }

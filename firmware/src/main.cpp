@@ -140,11 +140,6 @@ void init() {
 void update() {
 	gpio_put(LedYellow, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-	sleep_ms(50);
-
-	gpio_put(LedYellow, 0);
-	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-	sleep_ms(50);
 
 	if (time_us_32() >= LastBeaconUs + RailwayProtocol::BeaconIntervalUs) {
 		udpBroadcastBeacon();
@@ -157,6 +152,11 @@ void update() {
 	}
 
 	cyw43_arch_poll();
+
+	gpio_put(LedYellow, 0);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+	sleep_ms(50);
+
 	++UpdateCounter;
 }
 

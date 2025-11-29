@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "RailwayProtocol.h"
+
 #include "lwip/ip_addr.h"
 
 namespace RailwayProtocol {
@@ -10,6 +12,7 @@ struct Device {
 
 	ip_addr_t Address;
 	u16_t Port;
+	ESwitchDirection SwitchDirection;
 	char Name[MaxDeviceName];
 };
 

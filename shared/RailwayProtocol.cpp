@@ -27,6 +27,15 @@ size_t Packet::NewStatus(void* buffer, size_t bufferSize, ESwitchDirection dir) 
 	return sizeof(*packet) + 1;
 }
 
+size_t Packet::NewSetSwitch(void* buffer, size_t bufferSize, ESwitchDirection dir) {
+	Packet* packet = static_cast<Packet*>(buffer);
+	packet->Magic = EMagic::Magic;
+	packet->Version = EVersion::V1;
+	packet->MsgType = EMsgType::SetSwitch;
+	packet->Data[0] = static_cast<uint8_t>(dir);
+	return sizeof(*packet) + 1;
+}
+
 Packet* Packet::FromBuffer(void* buffer, size_t bufferSize) {
 	// for simplicity now expect always at least one byte of data after the header
 	if (bufferSize < PacketSize + 1) {

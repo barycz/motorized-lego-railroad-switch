@@ -58,6 +58,8 @@ void DeviceManager::processPendingDatagrams()
 		QByteArray nameBytes = datagram.mid(3);
 		QString deviceName = QString::fromLocal8Bit(nameBytes);
 
+		qDebug() << static_cast<uint>(datagram[2]) << " from" << sender.toString() << ":" << senderPort << ", Name: " << deviceName;
+
 		if (deviceName.isEmpty())
 		{
 			qDebug() << "Received empty or non-UTF8 datagram from" << sender.toString();
@@ -83,7 +85,6 @@ void DeviceManager::processPendingDatagrams()
 		}
 
 		emit devicesUpdated(devices);
-		qDebug() << "Beacon from" << sender.toString() << ":" << senderPort << ", Name: " << deviceName;
 	}
 }
 

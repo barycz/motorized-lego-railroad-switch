@@ -37,6 +37,8 @@ RailwayProtocol::Device* RailwayProtocol::DeviceManager::FindOrCreateDevice(cons
 		if (IsValidDevice(device) == false) { // found empty slot, create new
 			ip_addr_copy(device.Address, *addr);
 			device.Port = port;
+			device.SwitchDirection = ESwitchDirection::Center;
+			strncpy(device.Name, "<Unknown>", Device::MaxDeviceName);
 			return &device;
 		}
 	}
@@ -57,5 +59,7 @@ size_t RailwayProtocol::DeviceManager::GetDeviceCount() const {
 void RailwayProtocol::DeviceManager::HandlePacket(const Packet& packet, Device& device) {
 	if (packet.MsgType == Packet::EMsgType::Beacon) {
 		strncpy(device.Name, reinterpret_cast<const char*>(packet.Data), Device::MaxDeviceName);
+	} else if (packet.MsgType == Packet::EMsgType::Status) {
+		device.SwitchDirection = static_cast<ESwitchDirection>(packet.Data[0]);
 	}
 }

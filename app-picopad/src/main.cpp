@@ -3,9 +3,8 @@
 
 #include "RailwayProtocol.h"
 #include "RailwayDeviceManager.h"
-
-#include "hagl_hal.h"
-#include "hagl.h"
+#include "RailwayDeviceController.h"
+#include "Ui.h"
 
 #include "pico/cyw43_arch.h"
 
@@ -23,16 +22,14 @@ static uint UpdateCounter = 0;
 static udp_pcb* Udp = nullptr;
 
 static RailwayProtocol::DeviceManager DeviceManager;
-
-static hagl_backend_t *Display = nullptr;
-DebugLog dbgLog(&Display);
+RailwayDeviceController DeviceController(DeviceManager, Udp);
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
 	const RailwayProtocol::Packet* packet = RailwayProtocol::Packet::FromBuffer(p->payload, p->len);
 	if (packet) {
 		DeviceManager.OnPacketReceived(*packet, addr, port);
 	} else {
-		dbgLog.Log("[%u] incorrect %u bytes from %s", UpdateCounter, p->len, ipaddr_ntoa(addr));
+		g_dbgLog.Log("[%u] incorrect %u bytes from %s", UpdateCounter, p->len, ipaddr_ntoa(addr));
 	}
 	pbuf_free(p);
 }
@@ -44,31 +41,30 @@ void init() {
 	gpio_set_dir(LedUsr, GPIO_OUT);
 	gpio_put(LedUsr, 0);
 
-	Display = hagl_init();
-	hagl_clear(Display);
+	Ui::Init();
 
-	dbgLog.Log("Initializing ...");
+	g_dbgLog.Log("Initializing ...");
 
 	if (cyw43_arch_init()) {
-		dbgLog.Log("Wi-Fi init failed");
+		g_dbgLog.Log("Wi-Fi init failed");
 		exit(1);
 	}
 
 	cyw43_arch_enable_sta_mode();
 
-	dbgLog.Log("Connecting to Wi-Fi '%s'...", WIFI_SSID);
+	g_dbgLog.Log("Connecting to Wi-Fi '%s'...", WIFI_SSID);
 	while (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-		dbgLog.Log("failed to connect, retrying ...");
+		g_dbgLog.Log("failed to connect, retrying ...");
 	}
-	dbgLog.Log("Connected.");
+	g_dbgLog.Log("Connected.");
 
 	Udp = udp_new();
 	if (udp_bind(Udp, IP_ADDR_ANY, RailwayProtocol::UdpPort) != ERR_OK) {
-		dbgLog.Log("failed to bind.");
+		g_dbgLog.Log("failed to bind.");
 		exit(3);
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
-	dbgLog.Log("Listening on %u...", RailwayProtocol::UdpPort);
+	g_dbgLog.Log("Listening on %u...", RailwayProtocol::UdpPort);
 }
 
 void update() {
@@ -76,15 +72,20 @@ void update() {
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 	sleep_ms(50);
 
+	Ui::BeginWidget();
+
+	cyw43_arch_poll();
+	g_dbgLog.Flush();
+
+	Ui::Separator();
+
+	DeviceController.Update();
+
+	Ui::EndWidget();
+
 	gpio_put(LedUsr, 0);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 	sleep_ms(50);
-
-	cyw43_arch_poll();
-
-	DeviceManager.ForEachDevice([](const RailwayProtocol::Device& device) {
-		dbgLog.Log("Device: %s on %s:%u", device.Name, ipaddr_ntoa(&device.Address), device.Port);
-	});
 
 	++UpdateCounter;
 }
@@ -97,5 +98,5 @@ int main() {
 	}
 
 	cyw43_arch_deinit();
-	hagl_close(Display);
+	Ui::Deinit();
 }
