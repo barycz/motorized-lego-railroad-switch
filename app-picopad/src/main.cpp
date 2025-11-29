@@ -65,12 +65,12 @@ void init() {
 	}
 	udp_recv(Udp, udpReceiveCallback, nullptr);
 	g_dbgLog.Log("Listening on %u...", RailwayProtocol::UdpPort);
+	g_dbgLog.SetAutoFlush(false); // from now on the debug log is drawed as a part of the main UI
 }
 
 void update() {
 	gpio_put(LedUsr, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-	sleep_ms(50);
 
 	Ui::BeginWidget();
 
@@ -85,7 +85,7 @@ void update() {
 
 	gpio_put(LedUsr, 0);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-	sleep_ms(50);
+	sleep_ms(10);
 
 	++UpdateCounter;
 }

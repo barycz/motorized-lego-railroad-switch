@@ -16,7 +16,9 @@ void DebugLog::Log(const char* format, ...) {
 	printf("%s\n", _buffer[_lineIndex]);
 	_lineIndex = (_lineIndex + 1) % LineCount;
 
-	Flush();
+	if (_autoFlush) {
+		Flush();
+	}
 }
 
 void DebugLog::Flush() {

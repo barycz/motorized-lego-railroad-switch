@@ -30,11 +30,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-add_executable(train-switch-firmware
-	src/main.cpp
-	../shared/RailwayProtocol.h
-	../shared/RailwayProtocol.cpp
-)
+file(GLOB_RECURSE FIRMWARE_SOURCES "src/*.cpp" "src/*.c" "../shared/*.cpp" "../shared/*.c")
+
+add_executable(train-switch-firmware ${FIRMWARE_SOURCES})
 
 pico_enable_stdio_usb(train-switch-firmware 1)
 pico_enable_stdio_uart(train-switch-firmware 0)

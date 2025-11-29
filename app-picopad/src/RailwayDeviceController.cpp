@@ -1,6 +1,7 @@
 
 #include "RailwayDeviceController.h"
 #include "RailwayDeviceManager.h"
+#include "RailwayLwIPPacketSender.h"
 
 #include "Ui.h"
 
@@ -21,4 +22,12 @@ void RailwayDeviceController::UpdateDevice(const RailwayProtocol::Device& device
 		: device.SwitchDirection == RailwayProtocol::ESwitchDirection::Right ? 'R'
 		: 'C';
 	Ui::Text("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), dir);
+}
+
+void RailwayDeviceController::ToggleSwitch(RailwayProtocol::Device& device) {
+	device.SwitchDirection
+		= device.SwitchDirection == RailwayProtocol::ESwitchDirection::Left
+		? RailwayProtocol::ESwitchDirection::Right
+		: RailwayProtocol::ESwitchDirection::Left;
+	RailwayProtocol::LwIPPacketSender::SendSetSwitch(*Udp, device.Address, device.SwitchDirection);
 }

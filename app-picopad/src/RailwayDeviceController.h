@@ -15,6 +15,7 @@ public:
 	~RailwayDeviceController() {}
 
 	void Update();
+	void ToggleSwitch(RailwayProtocol::Device& device);
 
 private:
 	void UpdateDevice(const RailwayProtocol::Device& device);

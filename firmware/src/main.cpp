@@ -17,6 +17,7 @@
 #include "lwip/udp.h"
 
 #include "RailwayProtocol.h"
+#include "RailwayLwIPPacketSender.h"
 
 const uint LedYellow = 1;
 
@@ -63,32 +64,6 @@ void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet) {
 			printf("unhandled RailwayProtocol packet\n");
 			break;
 	}
-}
-
-void udpBroadcastBeacon() {
-	static const size_t BeaconSize = 32;
-	uint8_t buffer[BeaconSize];
-	const size_t packetSize = RailwayProtocol::Packet::NewBeacon(buffer, BeaconSize, "Switch");
-	struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
-	memcpy(p->payload, buffer, packetSize);
-	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, RailwayProtocol::UdpPort);
-	if (er != ERR_OK) {
-		printf("Failed to send beacon.\n");
-	}
-	pbuf_free(p);
-}
-
-void udpBroadcastStatus() {
-	static const size_t StatusSize = 32;
-	uint8_t buffer[StatusSize];
-	const size_t packetSize = RailwayProtocol::Packet::NewStatus(buffer, StatusSize, SwitchDir);
-	struct pbuf* p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
-	memcpy(p->payload, buffer, packetSize);
-	const err_t er = udp_sendto(Udp, p, IP_ADDR_BROADCAST, RailwayProtocol::UdpPort);
-	if (er != ERR_OK) {
-		printf("Failed to send beacon.\n");
-	}
-	pbuf_free(p);
 }
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
@@ -142,12 +117,12 @@ void update() {
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 
 	if (time_us_32() >= LastBeaconUs + RailwayProtocol::BeaconIntervalUs) {
-		udpBroadcastBeacon();
+		RailwayProtocol::LwIPPacketSender::SendBeacon(*Udp, "Switch");
 		LastBeaconUs = time_us_32();
 	}
 
 	if (time_us_32() >= LastStatusUs + RailwayProtocol::StatusIntervalUs) {
-		udpBroadcastStatus();
+		RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, SwitchDir);
 		LastStatusUs = time_us_32();
 	}
 
