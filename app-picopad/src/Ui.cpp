@@ -6,16 +6,29 @@
 #include "font6x9.h"
 #include "fontx.h"
 
+#include "hardware/gpio.h"
+
 #include <stdarg.h>
 #include <stdio.h>
+#include <array>
 
 namespace Ui {
+
+enum class ButtonState {
+	Up = 0,
+	Down,
+	Pressed, // was up, now is down
+	Released, // was down, now is up
+};
 
 struct Context {
 	hagl_backend_t* Display;
 	size_t WidgetStackSize;
 	uint16_t X;
 	uint16_t Y;
+
+	std::array<ButtonState, static_cast<size_t>(Button::Count)> ButtonStates;
+	std::array<uint, static_cast<size_t>(Button::Count)> ButtonMapping;
 };
 
 static Context g_Context;
@@ -58,7 +71,71 @@ void Separator() {
 	g_Context.Y += 1;
 }
 
+void UpdateInputs() {
+	UI_CHECK_CONTEXT();
+	for (size_t i = 0; i < static_cast<size_t>(Button::Count); ++i) {
+		if (g_Context.ButtonMapping[i] == -1) {
+			continue;
+		}
+		if (gpio_get(g_Context.ButtonMapping[i]) == BUTTON_PRESSED_LEVEL) {
+			if (g_Context.ButtonStates[i] == ButtonState::Up || g_Context.ButtonStates[i] == ButtonState::Released) {
+				g_Context.ButtonStates[i] = ButtonState::Pressed;
+			} else {
+				g_Context.ButtonStates[i] = ButtonState::Down;
+			}
+		} else {
+			if (g_Context.ButtonStates[i] == ButtonState::Down || g_Context.ButtonStates[i] == ButtonState::Pressed) {
+				g_Context.ButtonStates[i] = ButtonState::Released;
+			} else {
+				g_Context.ButtonStates[i] = ButtonState::Up;
+			}
+		}
+	}
+}
+
+bool IsButtonPressed(Button button) {
+	return g_Context.ButtonStates[static_cast<size_t>(button)] == ButtonState::Pressed;
+}
+
 void Init() {
+	g_Context.ButtonMapping.fill(-1);
+	g_Context.ButtonStates.fill(ButtonState::Up);
+	auto setupInput = [](uint gpio, Button button) {
+		gpio_init(gpio);
+		gpio_set_dir(gpio, GPIO_IN);
+#if BUTTON_PRESSED_LEVEL == 0
+		gpio_pull_up(gpio);
+#else
+		gpio_pull_down(gpio);
+#endif
+		g_Context.ButtonMapping[static_cast<size_t>(button)] = gpio;
+	};
+
+#ifdef BUTTON_A_PIN
+	setupInput(BUTTON_A_PIN, Button::A);
+#endif
+#ifdef BUTTON_B_PIN
+	setupInput(BUTTON_B_PIN, Button::B);
+#endif
+#ifdef BUTTON_X_PIN
+	setupInput(BUTTON_X_PIN, Button::X);
+#endif
+#ifdef BUTTON_Y_PIN
+	setupInput(BUTTON_Y_PIN, Button::Y);
+#endif
+#ifdef BUTTON_UP_PIN
+	setupInput(BUTTON_UP_PIN, Button::Up);
+#endif
+#ifdef BUTTON_DOWN_PIN
+	setupInput(BUTTON_DOWN_PIN, Button::Down);
+#endif
+#ifdef BUTTON_LEFT_PIN
+	setupInput(BUTTON_LEFT_PIN, Button::Left);
+#endif
+#ifdef BUTTON_RIGHT_PIN
+	setupInput(BUTTON_RIGHT_PIN, Button::Right);
+#endif
+
 	g_Context.Display = hagl_init();
 	g_Context.WidgetStackSize = 0;
 	g_Context.X = 0;

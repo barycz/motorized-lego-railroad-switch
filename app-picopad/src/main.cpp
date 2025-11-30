@@ -72,6 +72,7 @@ void update() {
 	gpio_put(LedUsr, 1);
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 
+	Ui::UpdateInputs();
 	Ui::BeginWidget();
 
 	cyw43_arch_poll();

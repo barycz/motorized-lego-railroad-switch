@@ -22,6 +22,9 @@ void RailwayDeviceController::UpdateDevice(const RailwayProtocol::Device& device
 		: device.SwitchDirection == RailwayProtocol::ESwitchDirection::Right ? 'R'
 		: 'C';
 	Ui::Text("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), dir);
+	if (Ui::IsButtonPressed(Ui::Button::X)) {
+		ToggleSwitch(const_cast<RailwayProtocol::Device&>(device));
+	}
 }
 
 void RailwayDeviceController::ToggleSwitch(RailwayProtocol::Device& device) {
