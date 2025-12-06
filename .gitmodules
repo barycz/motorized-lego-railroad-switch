@@ -4,3 +4,6 @@
 [submodule "app-picopad/external/hagl"]
 	path = app-picopad/external/hagl
 	url = https://github.com/tuupola/hagl.git
+[submodule "app-picopad/external/embedded-fonts"]
+	path = app-picopad/external/embedded-fonts
+	url = https://github.com/tuupola/embedded-fonts.git
