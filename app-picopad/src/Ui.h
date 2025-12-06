@@ -23,6 +23,7 @@ void BeginWidget();
 void EndWidget();
 
 void Text(const char* format, ...);
+void TextUnformatted(const char* text);
 void Separator();
 
 void Init();

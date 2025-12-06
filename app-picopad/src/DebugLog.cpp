@@ -24,7 +24,7 @@ void DebugLog::Log(const char* format, ...) {
 void DebugLog::Flush() {
 	Ui::BeginWidget();
 	for (uint8_t i = 0; i < LineCount; ++i) {
-		Ui::Text("%s", _buffer[(i + _lineIndex) % LineCount]);
+		Ui::TextUnformatted(_buffer[(i + _lineIndex) % LineCount]);
 	}
 	Ui::EndWidget();
 }

@@ -37,13 +37,17 @@ static Context g_Context;
 	if (g_Context.Display == nullptr) { return; }
 
 void Text(const char* format, ...) {
-	UI_CHECK_CONTEXT();
-
 	char buffer[32];
 	va_list args;
 	va_start(args, format);
 	vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
+
+	TextUnformatted(buffer);
+}
+
+void TextUnformatted(const char* text) {
+	UI_CHECK_CONTEXT();
 
 	fontx_meta_t meta;
 	fontx_meta(&meta, font6x9);
@@ -51,7 +55,7 @@ void Text(const char* format, ...) {
 	uint16_t x = g_Context.X;
 	uint16_t y = g_Context.Y;
 
-	char* it = buffer;
+	const char* it = text;
 	do {
 		wchar_t temp = *it++;
 		if (13 == temp || 10 == temp) {
