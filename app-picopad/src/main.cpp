@@ -78,6 +78,7 @@ void update() {
 	cyw43_arch_poll();
 	g_dbgLog.Flush();
 
+	Ui::SetColor(Ui::Color::Gray());
 	Ui::Separator();
 
 	DeviceController.Update();

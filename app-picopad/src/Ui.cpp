@@ -21,20 +21,38 @@ enum class ButtonState {
 	Released, // was down, now is up
 };
 
+struct WidgetState {
+	Color CurrentColor;
+};
+
 struct Context {
 	hagl_backend_t* Display;
 	size_t WidgetStackSize;
+	Color DefaultColor;
 	uint16_t X;
 	uint16_t Y;
 
 	std::array<ButtonState, static_cast<size_t>(Button::Count)> ButtonStates;
 	std::array<uint, static_cast<size_t>(Button::Count)> ButtonMapping;
+	std::array<WidgetState, 10> WidgetStack;
 };
 
 static Context g_Context;
 
-#define UI_CHECK_CONTEXT() \
-	if (g_Context.Display == nullptr) { return; }
+#define UI_CHECK_VALID_DISPLAY() \
+	assert(g_Context.Display != nullptr);
+
+#define UI_CHECK_NONEMPTY_STACK() \
+	assert(g_Context.WidgetStackSize > 0);
+
+hagl_color_t GetCurrentColor() {
+	UI_CHECK_VALID_DISPLAY();
+	UI_CHECK_NONEMPTY_STACK();
+	return hagl_color(g_Context.Display,
+		g_Context.WidgetStack[g_Context.WidgetStackSize - 1].CurrentColor.red,
+		g_Context.WidgetStack[g_Context.WidgetStackSize - 1].CurrentColor.green,
+		g_Context.WidgetStack[g_Context.WidgetStackSize - 1].CurrentColor.blue);
+}
 
 void Text(const char* format, ...) {
 	char buffer[32];
@@ -47,10 +65,13 @@ void Text(const char* format, ...) {
 }
 
 void TextUnformatted(const char* text) {
-	UI_CHECK_CONTEXT();
+	UI_CHECK_VALID_DISPLAY();
+	UI_CHECK_NONEMPTY_STACK();
 
 	fontx_meta_t meta;
 	fontx_meta(&meta, font6x9);
+
+	const hagl_color_t color = GetCurrentColor();
 
 	uint16_t x = g_Context.X;
 	uint16_t y = g_Context.Y;
@@ -62,7 +83,7 @@ void TextUnformatted(const char* text) {
 			x = g_Context.X;
 			y += meta.height;
 		} else {
-			x += hagl_put_char(g_Context.Display, temp, x, y, hagl_color(g_Context.Display, 255, 255, 255), font6x9);
+			x += hagl_put_char(g_Context.Display, temp, x, y, color, font6x9);
 		}
 	} while (*it != 0);
 
@@ -70,13 +91,13 @@ void TextUnformatted(const char* text) {
 }
 
 void Separator() {
-	UI_CHECK_CONTEXT();
-	hagl_draw_hline(g_Context.Display, g_Context.X, g_Context.Y, g_Context.Display->width - 1, hagl_color(g_Context.Display, 255, 255, 255));
+	UI_CHECK_VALID_DISPLAY();
+	UI_CHECK_NONEMPTY_STACK();
+	hagl_draw_hline(g_Context.Display, g_Context.X, g_Context.Y, g_Context.Display->width - 1, GetCurrentColor());
 	g_Context.Y += 1;
 }
 
 void UpdateInputs() {
-	UI_CHECK_CONTEXT();
 	for (size_t i = 0; i < static_cast<size_t>(Button::Count); ++i) {
 		if (g_Context.ButtonMapping[i] == -1) {
 			continue;
@@ -140,29 +161,31 @@ void Init() {
 	setupInput(BUTTON_RIGHT_PIN, Button::Right);
 #endif
 
-	g_Context.Display = hagl_init();
+	g_Context.DefaultColor = Color::White();
+	g_Context.WidgetStack.fill(WidgetState{g_Context.DefaultColor});
 	g_Context.WidgetStackSize = 0;
+
+	g_Context.Display = hagl_init();
 	g_Context.X = 0;
 	g_Context.Y = 0;
 	hagl_clear(g_Context.Display);
 }
 
 void BeginWidget() {
-	UI_CHECK_CONTEXT();
+	UI_CHECK_VALID_DISPLAY();
 	if (g_Context.WidgetStackSize == 0) {
 		hagl_clear(g_Context.Display);
 		g_Context.X = 0;
 		g_Context.Y = 0;
 	}
+	g_Context.WidgetStack[g_Context.WidgetStackSize].CurrentColor = g_Context.DefaultColor;
+	assert(g_Context.WidgetStackSize < Context::WidgetStack::size());
 	g_Context.WidgetStackSize++;
 }
 
 void EndWidget() {
-	UI_CHECK_CONTEXT();
-	if (g_Context.WidgetStackSize == 0) {
-		printf("Ui::EndWidget() stack underflow");
-		return;
-	}
+	UI_CHECK_VALID_DISPLAY();
+	UI_CHECK_NONEMPTY_STACK();
 	g_Context.WidgetStackSize--;
 
 	if (g_Context.WidgetStackSize == 0) {
@@ -170,8 +193,13 @@ void EndWidget() {
 	}
 }
 
+void SetColor(Color color) {
+	UI_CHECK_NONEMPTY_STACK();
+	g_Context.WidgetStack[g_Context.WidgetStackSize - 1].CurrentColor = color;
+}
+
 void Deinit() {
-	UI_CHECK_CONTEXT();
+	UI_CHECK_VALID_DISPLAY();
 	hagl_close(g_Context.Display);
 	g_Context.Display = nullptr;
 }

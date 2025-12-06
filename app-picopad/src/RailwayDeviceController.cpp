@@ -9,7 +9,8 @@
 
 void RailwayDeviceController::Update() {
 	Ui::BeginWidget();
-	Ui::Text("Devices:");
+	Ui::TextUnformatted("Devices:");
+	Ui::SetColor(Ui::Color::Green());
 	DeviceManager.ForEachDevice([&](const RailwayProtocol::Device& device) {
 		UpdateDevice(device);
 	});
