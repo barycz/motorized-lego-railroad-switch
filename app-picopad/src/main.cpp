@@ -53,7 +53,7 @@ void init() {
 	cyw43_arch_enable_sta_mode();
 
 	g_dbgLog.Log("Connecting to Wi-Fi '%s'...", WIFI_SSID);
-	while (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+	while (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 10000)) {
 		g_dbgLog.Log("failed to connect, retrying ...");
 	}
 	g_dbgLog.Log("Connected.");

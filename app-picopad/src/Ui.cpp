@@ -4,6 +4,7 @@
 #include "hagl_hal.h"
 #include "hagl.h"
 #include "font6x9.h"
+#include "X11/include/font8x13.h"
 #include "fontx.h"
 
 #include "hardware/gpio.h"
@@ -13,6 +14,9 @@
 #include <array>
 
 namespace Ui {
+
+static_assert(HAGL_CHAR_BUFFER_SIZE >= 8 * 13 * 2);
+static const uint8_t* g_Font = font8x13;
 
 enum class ButtonState {
 	Up = 0,
@@ -69,7 +73,7 @@ void TextUnformatted(const char* text) {
 	UI_CHECK_NONEMPTY_STACK();
 
 	fontx_meta_t meta;
-	fontx_meta(&meta, font6x9);
+	fontx_meta(&meta, g_Font);
 
 	const hagl_color_t color = GetCurrentColor();
 
@@ -83,7 +87,7 @@ void TextUnformatted(const char* text) {
 			x = g_Context.X;
 			y += meta.height;
 		} else {
-			x += hagl_put_char(g_Context.Display, temp, x, y, color, font6x9);
+			x += hagl_put_char(g_Context.Display, temp, x, y, color, g_Font);
 		}
 	} while (*it != 0);
 

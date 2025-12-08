@@ -20,8 +20,9 @@ target_compile_definitions(${FIRMWARE} PRIVATE
 )
 
 target_include_directories(${FIRMWARE} PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}/src
-	${CMAKE_CURRENT_LIST_DIR}/../shared
+	src
+	../shared
+	external/embedded-fonts
 )
 
 target_link_libraries(${FIRMWARE}
@@ -33,7 +34,7 @@ target_link_libraries(${FIRMWARE}
 
 target_compile_definitions(${FIRMWARE} PRIVATE
 	HAGL_HAL_USE_DOUBLE_BUFFER
-	HAGL_HAL_DEBUG
+	HAGL_CHAR_BUFFER_SIZE=208
 )
 
 include(boards/Picopad.cmake)
