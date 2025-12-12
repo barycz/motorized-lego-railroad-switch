@@ -2,6 +2,7 @@
 #pragma once
 
 #include "RailwayProtocol.h"
+#include "ReplicatedVariable.h"
 
 #include "lwip/ip_addr.h"
 
@@ -12,7 +13,7 @@ struct Device {
 
 	ip_addr_t Address;
 	u16_t Port;
-	ESwitchDirection SwitchDirection;
+	ReplicatedVariable<ESwitchDirection> SwitchDirection;
 	char Name[MaxDeviceName];
 };
 

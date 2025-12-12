@@ -18,20 +18,22 @@ void RailwayDeviceController::Update() {
 }
 
 void RailwayDeviceController::UpdateDevice(const RailwayProtocol::Device& device) {
-	const char dir
-		= device.SwitchDirection == RailwayProtocol::ESwitchDirection::Left ? 'L'
-		: device.SwitchDirection == RailwayProtocol::ESwitchDirection::Right ? 'R'
-		: 'C';
-	Ui::Text("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), dir);
 	if (Ui::IsButtonPressed(Ui::Button::X)) {
 		ToggleSwitch(const_cast<RailwayProtocol::Device&>(device));
+	}
+	const char localDir = RailwayProtocol::ToChar(device.SwitchDirection.GetLocal());
+	const char remoteDir = RailwayProtocol::ToChar(device.SwitchDirection.GetRemote());
+	if (localDir != remoteDir) {
+		Ui::Text("%s [%s] %c -> %c", device.Name, ipaddr_ntoa(&device.Address), remoteDir, localDir);
+		RailwayProtocol::LwIPPacketSender::SendSetSwitch(*Udp, device.Address, device.SwitchDirection.GetLocal());
+	} else {
+		Ui::Text("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), localDir);
 	}
 }
 
 void RailwayDeviceController::ToggleSwitch(RailwayProtocol::Device& device) {
-	device.SwitchDirection
-		= device.SwitchDirection == RailwayProtocol::ESwitchDirection::Left
+	device.SwitchDirection.SetLocal(
+		device.SwitchDirection.GetLocal() == RailwayProtocol::ESwitchDirection::Left
 		? RailwayProtocol::ESwitchDirection::Right
-		: RailwayProtocol::ESwitchDirection::Left;
-	RailwayProtocol::LwIPPacketSender::SendSetSwitch(*Udp, device.Address, device.SwitchDirection);
+		: RailwayProtocol::ESwitchDirection::Left);
 }

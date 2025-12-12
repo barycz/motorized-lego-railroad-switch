@@ -47,4 +47,12 @@ Packet* Packet::FromBuffer(void* buffer, size_t bufferSize) {
 	return ret;
 }
 
+char ToChar(ESwitchDirection direction) {
+	switch (direction) {
+		case ESwitchDirection::Center: return 'C';
+		case ESwitchDirection::Left: return 'L';
+		case ESwitchDirection::Right: return 'R';
+	}
+}
+
 }

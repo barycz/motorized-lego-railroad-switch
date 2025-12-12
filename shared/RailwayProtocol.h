@@ -44,4 +44,6 @@ const uint16_t UdpPort = 57890;
 const uint32_t BeaconIntervalUs = 1000000;
 const uint32_t StatusIntervalUs = 500000;
 
+char ToChar(ESwitchDirection direction);
+
 }
