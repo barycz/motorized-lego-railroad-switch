@@ -4,6 +4,7 @@
 #include "RailwayProtocol.h"
 #include "RailwayDeviceManager.h"
 #include "RailwayDeviceController.h"
+#include "RailwayLwIPPacketSender.h"
 #include "Ui.h"
 
 #include "pico/cyw43_arch.h"
@@ -66,6 +67,8 @@ void init() {
 	udp_recv(Udp, udpReceiveCallback, nullptr);
 	g_dbgLog.Log("Listening on %u...", RailwayProtocol::UdpPort);
 	g_dbgLog.SetAutoFlush(false); // from now on the debug log is drawed as a part of the main UI
+
+	RailwayProtocol::LwIPPacketSender::SendRequestUpdate(*Udp, *IP_ADDR_ANY);
 }
 
 void update() {

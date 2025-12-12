@@ -34,6 +34,7 @@ static uint32_t LastBeaconUs = 0;
 static uint32_t LastStatusUs = 0;
 static udp_pcb* Udp = nullptr;
 static RailwayProtocol::ESwitchDirection SwitchDir;
+static const char* DeviceName = "Switch";
 
 void setServoDuty(uint dutyUs) {
 	pwm_set_chan_level(ServoPwmSlice, 0, dutyUs);
@@ -61,6 +62,9 @@ void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet, const ip
 			setSwitch(static_cast<RailwayProtocol::ESwitchDirection>(packet.Data[0]));
 			RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, remote, SwitchDir);
 			break;
+		case RailwayProtocol::Packet::EMsgType::RequestUpdate:
+			RailwayProtocol::LwIPPacketSender::SendBeacon(*Udp, remote, DeviceName);
+			RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, remote, SwitchDir);
 		default:
 			printf("unhandled RailwayProtocol packet\n");
 			break;
@@ -119,7 +123,7 @@ void update() {
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 
 	if (time_us_32() >= LastBeaconUs + RailwayProtocol::BeaconIntervalUs) {
-		RailwayProtocol::LwIPPacketSender::SendBeacon(*Udp, "Switch");
+		RailwayProtocol::LwIPPacketSender::SendBeacon(*Udp, *IP_ADDR_ANY, DeviceName);
 		LastBeaconUs = time_us_32();
 	}
 

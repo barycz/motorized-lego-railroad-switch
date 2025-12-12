@@ -36,6 +36,14 @@ size_t Packet::NewSetSwitch(void* buffer, size_t bufferSize, ESwitchDirection di
 	return sizeof(*packet) + 1;
 }
 
+size_t Packet::NewRequestUpdate(void* buffer, size_t bufferSize) {
+	Packet* packet = static_cast<Packet*>(buffer);
+	packet->Magic = EMagic::Magic;
+	packet->Version = EVersion::V1;
+	packet->MsgType = EMsgType::RequestUpdate;
+	return sizeof(*packet);
+}
+
 Packet* Packet::FromBuffer(void* buffer, size_t bufferSize) {
 	// for simplicity now expect always at least one byte of data after the header
 	if (bufferSize < PacketSize + 1) {
@@ -49,9 +57,9 @@ Packet* Packet::FromBuffer(void* buffer, size_t bufferSize) {
 
 char ToChar(ESwitchDirection direction) {
 	switch (direction) {
-		case ESwitchDirection::Center: return 'C';
 		case ESwitchDirection::Left: return 'L';
 		case ESwitchDirection::Right: return 'R';
+		default: return 'C';
 	}
 }
 

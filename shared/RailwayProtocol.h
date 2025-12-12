@@ -24,11 +24,13 @@ struct Packet {
 		Beacon = 1,
 		SetSwitch = 2,
 		Status = 3,
+		RequestUpdate = 4,
 	};
 
 	static size_t NewBeacon(void* buffer, size_t bufferSize, const char* deviceName);
 	static size_t NewStatus(void* buffer, size_t bufferSize, ESwitchDirection dir);
 	static size_t NewSetSwitch(void* buffer, size_t bufferSize, ESwitchDirection dir);
+	static size_t NewRequestUpdate(void* buffer, size_t bufferSize);
 	static Packet* FromBuffer(void* buffer, size_t bufferSize);
 
 	EMagic Magic;
