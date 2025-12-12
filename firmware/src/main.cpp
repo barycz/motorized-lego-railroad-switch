@@ -55,10 +55,11 @@ void setSwitch(RailwayProtocol::ESwitchDirection dir) {
 	}
 }
 
-void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet) {
+void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet, const ip_addr_t& remote) {
 	switch (packet.MsgType) {
 		case RailwayProtocol::Packet::EMsgType::SetSwitch:
 			setSwitch(static_cast<RailwayProtocol::ESwitchDirection>(packet.Data[0]));
+			RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, remote, SwitchDir);
 			break;
 		default:
 			printf("unhandled RailwayProtocol packet\n");
@@ -67,10 +68,11 @@ void handleRailwayProtocolPacket(const RailwayProtocol::Packet& packet) {
 }
 
 void udpReceiveCallback(void* arg, udp_pcb* upcb, pbuf* p, const ip_addr_t* addr, u16_t port) {
+	assert(addr);
 	printf("received %u bytes in update iteration %u\n", p->len, UpdateCounter);
 	const RailwayProtocol::Packet* packet = RailwayProtocol::Packet::FromBuffer(p->payload, p->len);
 	if (packet) {
-		handleRailwayProtocolPacket(*packet);
+		handleRailwayProtocolPacket(*packet, *addr);
 	} else {
 		printf("skipping incorrect data\n");
 	}
@@ -122,7 +124,7 @@ void update() {
 	}
 
 	if (time_us_32() >= LastStatusUs + RailwayProtocol::StatusIntervalUs) {
-		RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, SwitchDir);
+		RailwayProtocol::LwIPPacketSender::SendStatus(*Udp, *IP_ADDR_ANY, SwitchDir);
 		LastStatusUs = time_us_32();
 	}
 

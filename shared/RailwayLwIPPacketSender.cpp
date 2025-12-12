@@ -23,13 +23,13 @@ void LwIPPacketSender::SendBeacon(udp_pcb& udp, const char* deviceName) {
 	pbuf_free(p);
 }
 
-void LwIPPacketSender::SendStatus(udp_pcb& udp, ESwitchDirection dir) {
+void LwIPPacketSender::SendStatus(udp_pcb& udp, const ip_addr_t& addr, ESwitchDirection dir) {
 	static const size_t StatusSize = 32;
 	uint8_t buffer[StatusSize];
 	const size_t packetSize = RailwayProtocol::Packet::NewStatus(buffer, StatusSize, dir);
 	struct pbuf* p = pbuf_alloc(PBUF_TRANSPORT, packetSize, PBUF_RAM);
 	memcpy(p->payload, buffer, packetSize);
-	const err_t er = udp_sendto(&udp, p, IP_ADDR_BROADCAST, RailwayProtocol::UdpPort);
+	const err_t er = udp_sendto(&udp, p, &addr, RailwayProtocol::UdpPort);
 	if (er != ERR_OK) {
 		printf("Failed to send beacon.\n");
 	}
