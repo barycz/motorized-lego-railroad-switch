@@ -42,6 +42,11 @@ void Text(const char* format, ...);
 void TextUnformatted(const char* text);
 void Separator();
 
+void BeginList(unsigned& activeIndex);
+void EndList();
+bool ListItem(const char* format, ...);
+bool ListItemUnformatted(const char* label);
+
 void Init();
 void Deinit();
 

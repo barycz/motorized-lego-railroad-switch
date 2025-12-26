@@ -10,24 +10,26 @@
 void RailwayDeviceController::Update() {
 	Ui::BeginWidget();
 	Ui::TextUnformatted("Devices:");
-	Ui::SetColor(Ui::Color::Green());
+	Ui::BeginList(LastActiveDeviceIndex);
 	DeviceManager.ForEachDevice([&](const RailwayProtocol::Device& device) {
 		UpdateDevice(device);
 	});
+	Ui::EndList();
 	Ui::EndWidget();
 }
 
 void RailwayDeviceController::UpdateDevice(const RailwayProtocol::Device& device) {
-	if (Ui::IsButtonPressed(Ui::Button::X)) {
-		ToggleSwitch(const_cast<RailwayProtocol::Device&>(device));
-	}
 	const char localDir = RailwayProtocol::ToChar(device.SwitchDirection.GetLocal());
 	const char remoteDir = RailwayProtocol::ToChar(device.SwitchDirection.GetRemote());
 	if (localDir != remoteDir) {
-		Ui::Text("%s [%s] %c -> %c", device.Name, ipaddr_ntoa(&device.Address), remoteDir, localDir);
+		Ui::ListItem("%s [%s] %c -> %c", device.Name, ipaddr_ntoa(&device.Address), remoteDir, localDir);
 		RailwayProtocol::LwIPPacketSender::SendSetSwitch(*Udp, device.Address, device.SwitchDirection.GetLocal());
 	} else {
-		Ui::Text("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), localDir);
+		if (Ui::ListItem("%s [%s] %c", device.Name, ipaddr_ntoa(&device.Address), localDir)) {
+			if (Ui::IsButtonPressed(Ui::Button::X)) {
+				ToggleSwitch(const_cast<RailwayProtocol::Device&>(device));
+			}
+		}
 	}
 }
 

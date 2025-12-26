@@ -22,4 +22,5 @@ private:
 
 	RailwayProtocol::DeviceManager& DeviceManager;
 	udp_pcb*& Udp;
+	unsigned LastActiveDeviceIndex = 0;
 };

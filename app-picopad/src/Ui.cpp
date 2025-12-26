@@ -25,8 +25,15 @@ enum class ButtonState {
 	Released, // was down, now is up
 };
 
+struct ListState {
+	unsigned* ActiveIndex;
+	unsigned ItemCount;
+	unsigned CurrentItemIndex;
+};
+
 struct WidgetState {
 	Color CurrentColor;
+	ListState List;
 };
 
 struct Context {
@@ -183,6 +190,7 @@ void BeginWidget() {
 		g_Context.Y = 0;
 	}
 	g_Context.WidgetStack[g_Context.WidgetStackSize].CurrentColor = g_Context.DefaultColor;
+	g_Context.WidgetStack[g_Context.WidgetStackSize].List.ActiveIndex = nullptr;
 	assert(g_Context.WidgetStackSize < Context::WidgetStack::size());
 	g_Context.WidgetStackSize++;
 }
@@ -206,6 +214,83 @@ void Deinit() {
 	UI_CHECK_VALID_DISPLAY();
 	hagl_close(g_Context.Display);
 	g_Context.Display = nullptr;
+}
+
+ListState& GetCurrentList() {
+	return g_Context.WidgetStack[g_Context.WidgetStackSize - 1].List;
+}
+
+void BeginList(unsigned& activeIndex) {
+	UI_CHECK_NONEMPTY_STACK();
+	ListState& list = GetCurrentList();
+	assert(list.ActiveIndex == nullptr);
+	list.ActiveIndex = &activeIndex;
+	list.ItemCount = 0;
+	list.CurrentItemIndex = 0;
+}
+
+void EndList() {
+	UI_CHECK_NONEMPTY_STACK();
+	ListState& list = GetCurrentList();
+	assert(list.ActiveIndex != nullptr);
+
+	if (list.ItemCount > 0) {
+		// Clamp active index to valid range
+		if (*list.ActiveIndex >= list.ItemCount) {
+			*list.ActiveIndex = 0;
+		}
+
+		// Handle navigation with wrapping
+		if (IsButtonPressed(Button::Up)) {
+			if (*list.ActiveIndex == 0) {
+				*list.ActiveIndex = list.ItemCount - 1;
+			} else {
+				(*list.ActiveIndex)--;
+			}
+		}
+		if (IsButtonPressed(Button::Down)) {
+			*list.ActiveIndex = (*list.ActiveIndex + 1) % list.ItemCount;
+		}
+	}
+
+	list.ActiveIndex = nullptr;
+}
+
+bool ListItem(const char* format, ...) {
+	char buffer[32];
+	va_list args;
+	va_start(args, format);
+	vsnprintf(buffer, sizeof(buffer), format, args);
+	va_end(args);
+
+	return ListItemUnformatted(buffer);
+}
+
+bool ListItemUnformatted(const char* label) {
+	UI_CHECK_NONEMPTY_STACK();
+	ListState& list = GetCurrentList();
+	assert(list.ActiveIndex != nullptr);
+
+	const unsigned itemIndex = list.CurrentItemIndex;
+	const bool isActive = (itemIndex == *list.ActiveIndex);
+
+	// Save current color and set highlight for active item
+	Color savedColor = g_Context.WidgetStack[g_Context.WidgetStackSize - 1].CurrentColor;
+	if (isActive) {
+		SetColor(Color::Green());
+	} else {
+		SetColor(Color::Gray());
+	}
+
+	TextUnformatted(label);
+
+	// Restore color
+	SetColor(savedColor);
+
+	list.ItemCount++;
+	list.CurrentItemIndex++;
+
+	return isActive;
 }
 
 }
